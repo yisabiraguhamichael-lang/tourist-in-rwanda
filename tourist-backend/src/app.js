@@ -16,10 +16,23 @@ const app = express();
 
 // Security & basics
 app.use(helmet());
+
+// CORS — allow local dev + deployed frontend
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: [process.env.CLIENT_URL || "http://localhost:5173"],
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);                          // Postman / curl
+    if (allowedOrigins.includes(origin)) return cb(null, true);   // listed origins
+    if (/\.onrender\.com$/.test(origin)) return cb(null, true);   // any *.onrender.com
+    return cb(new Error("Not allowed by CORS"));
+  },
   credentials: true,
 }));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(morgan("dev"));
 
